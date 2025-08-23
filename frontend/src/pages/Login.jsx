@@ -1,24 +1,38 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { login } from '../services/authService';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
-  })
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
-    })
-  }
+    });
+    setError('');
+  };
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // Handle login logic here
-    console.log('Login data:', formData)
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await login(formData);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container" style={{ 
@@ -36,6 +50,18 @@ const Login = () => {
         boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
       }}>
         <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Login</h2>
+        {error && (
+          <div style={{ 
+            color: '#d32f2f', 
+            backgroundColor: '#ffebee', 
+            padding: '10px', 
+            borderRadius: '4px', 
+            marginBottom: '1rem',
+            border: '1px solid #d32f2f'
+          }}>
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -59,8 +85,13 @@ const Login = () => {
               required
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-            Login
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            style={{ width: '100%' }}
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '1rem' }}>
@@ -68,7 +99,7 @@ const Login = () => {
         </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
