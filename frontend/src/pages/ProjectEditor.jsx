@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react';
 import { getProject, updateProject } from '../services/projectService';
 import { getCurrentUser } from '../services/authService';
 import socketService from '../services/socketService';
+import { executeCode } from '../services/executionService';
 import './ProjectEditor.css';
 
 const ProjectEditor = () => {
@@ -17,6 +18,8 @@ const ProjectEditor = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [onlineUsers, setOnlineUsers] = useState(1);
+  const [output, setOutput] = useState('');
+  const [executing, setExecuting] = useState(false);
   const editorRef = useRef(null);
   const hasSetupSocket = useRef(false);
 
@@ -38,7 +41,6 @@ const ProjectEditor = () => {
     return () => {
       if (hasSetupSocket.current) {
         socketService.removeAllListeners();
-        // Don't disconnect completely to maintain connection if navigating between projects
       }
     };
   }, [projectId, user, navigate]);
@@ -111,19 +113,38 @@ const ProjectEditor = () => {
     }
   };
 
-  const debouncedSave = debounce(handleSave, 2000);
+  const handleRunCode = async () => {
+  setExecuting(true);
+  setOutput('Executing code...');
+  
+  try {
+    const result = await executeCode(projectId, { code, language });
+    setOutput(result.output || 'No output generated');
+  } catch (err) {
+    setOutput(`❌ ${err.message || 'Execution failed'}`);
+    console.error('Code execution error:', err);
+  } finally {
+    setExecuting(false);
+  }
+};
+
+  const handleClearOutput = () => {
+    setOutput('');
+  };
 
   const handleLanguageChange = (newLanguage) => {
     setLanguage(newLanguage);
     debouncedSave();
   };
 
-  const handleRunCode = () => {
-    alert('Code execution will be implemented in Phase 6 with Judge0/Piston API');
-  };
+  const debouncedSave = debounce(handleSave, 2000);
 
   if (loading) {
-    return <div className="editor-container"><div className="editor-loading">Loading project...</div></div>;
+    return (
+      <div className="editor-container">
+        <div className="editor-loading">Loading project...</div>
+      </div>
+    );
   }
 
   if (error || !project) {
@@ -153,15 +174,24 @@ const ProjectEditor = () => {
         </div>
         
         <div className="editor-header-right">
-          <select value={language} onChange={(e) => handleLanguageChange(e.target.value)} className="language-select">
+          <select 
+            value={language} 
+            onChange={(e) => handleLanguageChange(e.target.value)} 
+            className="language-select"
+            disabled={executing}
+          >
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="java">Java</option>
             <option value="cpp">C++</option>
           </select>
           
-          <button onClick={handleRunCode} className="run-btn" disabled={saving}>
-            ▶ Run Code
+          <button 
+            onClick={handleRunCode} 
+            className="run-btn" 
+            disabled={saving || executing}
+          >
+            {executing ? '⏳ Running...' : '▶ Run Code'}
           </button>
           
           <div className="save-status">
@@ -189,6 +219,7 @@ const ProjectEditor = () => {
             wordWrap: 'on',
             automaticLayout: true,
             padding: { top: 10 },
+            readOnly: executing
           }}
           onMount={(editor) => (editorRef.current = editor)}
           loading={<div>Loading editor...</div>}
@@ -198,11 +229,21 @@ const ProjectEditor = () => {
       {/* Output Panel */}
       <div className="output-panel">
         <div className="output-header">
-          <h4>Output</h4>
-          <button className="clear-output">Clear</button>
+          <h4>Output {executing && '(Running...)'}</h4>
+          <button 
+            className="clear-output" 
+            onClick={handleClearOutput}
+            disabled={executing}
+          >
+            Clear
+          </button>
         </div>
         <div className="output-content">
-          <p>Run your code to see output here</p>
+          {output ? (
+            <pre>{output}</pre>
+          ) : (
+            <p>Run your code to see output here</p>
+          )}
         </div>
       </div>
     </div>

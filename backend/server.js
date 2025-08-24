@@ -28,6 +28,11 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/collab-wo
 .then(() => console.log('MongoDB connected successfully'))
 .catch(err => console.log('MongoDB connection error:', err));
 
+// Routes (ADD THESE ONCE - Remove duplicates)
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/projects', require('./routes/projectRoutes'));
+app.use('/api/execute', require('./routes/executionRoutes')); // Fixed this line
+
 // Socket.IO Connection
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -47,10 +52,6 @@ io.on('connection', (socket) => {
     console.log('User disconnected:', socket.id);
   });
 });
-
-// Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/projects', require('./routes/projectRoutes'));
 
 // Basic route for testing
 app.get('/api/test', (req, res) => {
@@ -78,6 +79,3 @@ process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', err);
   process.exit(1);
 });
-console.log('Server file loaded successfully');
-console.log('PORT value:', process.env.PORT);
-console.log('MONGODB_URI value:', process.env.MONGODB_URI ? 'Set' : 'Not set');

@@ -44,6 +44,21 @@ const projectSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Add execution history
+  executionHistory: [{
+    code: String,
+    language: String,
+    output: String,
+    executionTime: String,
+    executedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    executedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

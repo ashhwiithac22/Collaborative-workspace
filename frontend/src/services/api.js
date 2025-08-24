@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API = axios.create({
+const API = axios.create({
   baseURL: 'http://localhost:5000/api',
 });
 
@@ -13,4 +13,18 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Remove the default export and use named exports instead
+// Handle auth errors globally
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token is invalid - clear storage and redirect to login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export { API };
