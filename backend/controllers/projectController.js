@@ -1,5 +1,6 @@
 const Project = require('../models/Project');
-const User = require('../models/User'); // ADD THIS IMPORT
+const User = require('../models/User');
+const { sendInvitationEmail } = require('../utils/email');
 
 // Create a new project
 exports.createProject = async (req, res) => {
@@ -159,8 +160,22 @@ exports.addCollaborator = async (req, res) => {
     // Populate the new collaborator info
     await project.populate('collaborators.user', 'name email');
 
+    // Send invitation email
+    try {
+      const inviter = await User.findById(req.userId);
+      await sendInvitationEmail(
+        email,
+        inviter.name,
+        project.name,
+        projectId
+      );
+    } catch (emailError) {
+      console.error('Email sending failed, but collaborator was added:', emailError);
+      // Don't fail the whole request if email fails
+    }
+
     res.json({ 
-      message: 'Collaborator added successfully',
+      message: 'Collaborator added successfully and invitation sent',
       project 
     });
   } catch (error) {

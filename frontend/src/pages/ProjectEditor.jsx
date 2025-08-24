@@ -18,17 +18,28 @@ const ProjectEditor = () => {
   const [error, setError] = useState('');
   const [onlineUsers, setOnlineUsers] = useState(1);
   const editorRef = useRef(null);
+  const hasSetupSocket = useRef(false);
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
-    fetchProject();
-    setupSocket();
 
+    fetchProject();
+
+    // Setup socket only once
+    if (!hasSetupSocket.current) {
+      setupSocket();
+      hasSetupSocket.current = true;
+    }
+
+    // Cleanup function
     return () => {
-      socketService.disconnect();
+      if (hasSetupSocket.current) {
+        socketService.removeAllListeners();
+        // Don't disconnect completely to maintain connection if navigating between projects
+      }
     };
   }, [projectId, user, navigate]);
 
@@ -49,18 +60,21 @@ const ProjectEditor = () => {
   const setupSocket = () => {
     const socket = socketService.connect(projectId, user.id);
     
-    socket.on('code-change', ({ code: newCode, senderId }) => {
+    // Code change listener
+    socketService.onCodeChange(({ code: newCode, senderId }) => {
       if (senderId !== socket.id) {
         setCode(newCode);
       }
     });
 
-    socket.on('user-joined', ({ userId }) => {
+    // User joined listener
+    socketService.onUserJoined(({ userId }) => {
       console.log('User joined:', userId);
       setOnlineUsers(prev => prev + 1);
     });
 
-    socket.on('user-left', ({ userId }) => {
+    // User left listener
+    socketService.onUserLeft(({ userId }) => {
       console.log('User left:', userId);
       setOnlineUsers(prev => Math.max(1, prev - 1));
     });
