@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { getProject, updateProject } from '../services/projectService';
 import { getCurrentUser } from '../services/authService';
+import socketService from '../services/socketService';
 import './ProjectEditor.css';
 
 const ProjectEditor = () => {
@@ -15,6 +16,8 @@ const ProjectEditor = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [onlineUsers, setOnlineUsers] = useState(1);
+  const editorRef = useRef(null);
 
   useEffect(() => {
     if (!user) {
@@ -22,6 +25,11 @@ const ProjectEditor = () => {
       return;
     }
     fetchProject();
+    setupSocket();
+
+    return () => {
+      socketService.disconnect();
+    };
   }, [projectId, user, navigate]);
 
   const fetchProject = async () => {
@@ -38,9 +46,29 @@ const ProjectEditor = () => {
     }
   };
 
+  const setupSocket = () => {
+    const socket = socketService.connect(projectId, user.id);
+    
+    socket.on('code-change', ({ code: newCode, senderId }) => {
+      if (senderId !== socket.id) {
+        setCode(newCode);
+      }
+    });
+
+    socket.on('user-joined', ({ userId }) => {
+      console.log('User joined:', userId);
+      setOnlineUsers(prev => prev + 1);
+    });
+
+    socket.on('user-left', ({ userId }) => {
+      console.log('User left:', userId);
+      setOnlineUsers(prev => Math.max(1, prev - 1));
+    });
+  };
+
   const handleCodeChange = (value) => {
     setCode(value);
-    // Auto-save after 2 seconds of inactivity
+    socketService.emitCodeChange(value);
     debouncedSave();
   };
 
@@ -50,14 +78,7 @@ const ProjectEditor = () => {
     setSaving(true);
     try {
       await updateProject(projectId, { code, language });
-      // Show saved indicator
-      const saveIndicator = document.getElementById('save-indicator');
-      if (saveIndicator) {
-        saveIndicator.textContent = 'Saved ✓';
-        setTimeout(() => {
-          if (saveIndicator) saveIndicator.textContent = '';
-        }, 2000);
-      }
+      showSaveIndicator();
     } catch (err) {
       setError('Failed to save project');
       console.error('Error saving project:', err);
@@ -66,7 +87,16 @@ const ProjectEditor = () => {
     }
   };
 
-  // Debounce save function
+  const showSaveIndicator = () => {
+    const saveIndicator = document.getElementById('save-indicator');
+    if (saveIndicator) {
+      saveIndicator.textContent = 'Saved ✓';
+      setTimeout(() => {
+        if (saveIndicator) saveIndicator.textContent = '';
+      }, 2000);
+    }
+  };
+
   const debouncedSave = debounce(handleSave, 2000);
 
   const handleLanguageChange = (newLanguage) => {
@@ -75,16 +105,11 @@ const ProjectEditor = () => {
   };
 
   const handleRunCode = () => {
-    // We'll implement code execution in Phase 6
     alert('Code execution will be implemented in Phase 6 with Judge0/Piston API');
   };
 
   if (loading) {
-    return (
-      <div className="editor-container">
-        <div className="editor-loading">Loading project...</div>
-      </div>
-    );
+    return <div className="editor-container"><div className="editor-loading">Loading project...</div></div>;
   }
 
   if (error || !project) {
@@ -106,10 +131,7 @@ const ProjectEditor = () => {
       {/* Editor Header */}
       <div className="editor-header">
         <div className="editor-header-left">
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="back-btn"
-          >
+          <button onClick={() => navigate('/dashboard')} className="back-btn">
             ← Dashboard
           </button>
           <h2>{project.name}</h2>
@@ -117,22 +139,14 @@ const ProjectEditor = () => {
         </div>
         
         <div className="editor-header-right">
-          <select 
-            value={language} 
-            onChange={(e) => handleLanguageChange(e.target.value)}
-            className="language-select"
-          >
+          <select value={language} onChange={(e) => handleLanguageChange(e.target.value)} className="language-select">
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="java">Java</option>
             <option value="cpp">C++</option>
           </select>
           
-          <button 
-            onClick={handleRunCode}
-            className="run-btn"
-            disabled={saving}
-          >
+          <button onClick={handleRunCode} className="run-btn" disabled={saving}>
             ▶ Run Code
           </button>
           
@@ -142,7 +156,7 @@ const ProjectEditor = () => {
 
           <div className="collaborators">
             <span className="online-dot"></span>
-            <span>1 online</span>
+            <span>{onlineUsers} online</span>
           </div>
         </div>
       </div>
@@ -162,11 +176,12 @@ const ProjectEditor = () => {
             automaticLayout: true,
             padding: { top: 10 },
           }}
+          onMount={(editor) => (editorRef.current = editor)}
           loading={<div>Loading editor...</div>}
         />
       </div>
 
-      {/* Output Panel (will be used in Phase 6) */}
+      {/* Output Panel */}
       <div className="output-panel">
         <div className="output-header">
           <h4>Output</h4>

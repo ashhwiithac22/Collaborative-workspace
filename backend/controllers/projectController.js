@@ -1,4 +1,5 @@
 const Project = require('../models/Project');
+const User = require('../models/User'); // ADD THIS IMPORT
 
 // Create a new project
 exports.createProject = async (req, res) => {
@@ -110,5 +111,60 @@ exports.updateProject = async (req, res) => {
   } catch (error) {
     console.error('Update project error:', error);
     res.status(500).json({ message: 'Server error updating project' });
+  }
+};
+
+// Add collaborator to project
+exports.addCollaborator = async (req, res) => {
+  try {
+    const { email, role } = req.body;
+    const projectId = req.params.id;
+
+    console.log('Adding collaborator:', { projectId, email, role });
+
+    // Find the project
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Check if user is project owner
+    if (project.owner.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Only project owner can add collaborators' });
+    }
+
+    // Find the user by email
+    const userToAdd = await User.findOne({ email });
+    if (!userToAdd) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user is already a collaborator
+    const alreadyCollaborator = project.collaborators.some(
+      collab => collab.user && collab.user.toString() === userToAdd._id.toString()
+    );
+
+    if (alreadyCollaborator) {
+      return res.status(400).json({ message: 'User is already a collaborator' });
+    }
+
+    // Add collaborator
+    project.collaborators.push({
+      user: userToAdd._id,
+      role: role || 'editor'
+    });
+
+    await project.save();
+    
+    // Populate the new collaborator info
+    await project.populate('collaborators.user', 'name email');
+
+    res.json({ 
+      message: 'Collaborator added successfully',
+      project 
+    });
+  } catch (error) {
+    console.error('Add collaborator error:', error);
+    res.status(500).json({ message: 'Server error adding collaborator: ' + error.message });
   }
 };

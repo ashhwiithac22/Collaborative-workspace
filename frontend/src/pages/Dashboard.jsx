@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, logout } from '../services/authService';
 import { getUserProjects } from '../services/projectService';
 import CreateProjectModal from '../components/CreateProjectModal';
+import ShareProjectModal from '../components/ShareProjectModal';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -12,6 +13,8 @@ const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -34,6 +37,11 @@ const Dashboard = () => {
 
   const handleProjectCreated = (newProject) => {
     setProjects(prev => [newProject, ...prev]);
+  };
+
+  const handleShareProject = (project) => {
+    setSelectedProject(project);
+    setShareModalOpen(true);
   };
 
   const handleLogout = () => {
@@ -137,8 +145,11 @@ const Dashboard = () => {
                     >
                       Open Project
                     </button>
-                    <button className="btn-secondary">
-                      Settings
+                    <button 
+                      className="btn-secondary"
+                      onClick={() => handleShareProject(project)}
+                    >
+                      Share
                     </button>
                   </div>
                 </div>
@@ -152,6 +163,12 @@ const Dashboard = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onProjectCreated={handleProjectCreated}
+      />
+
+      <ShareProjectModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        project={selectedProject}
       />
     </div>
   );

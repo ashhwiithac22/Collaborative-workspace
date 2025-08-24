@@ -35,3 +35,13 @@ export const updateProject = async (projectId, updates) => {
     throw error.response?.data || { message: 'Failed to update project' };
   }
 };
+
+// Add this function
+export const addCollaborator = async (projectId, collaboratorData) => {
+  try {
+    const response = await API.post(`/projects/${projectId}/collaborators`, collaboratorData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to add collaborator' };
+  }
+};
