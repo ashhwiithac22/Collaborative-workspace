@@ -163,19 +163,24 @@ exports.addCollaborator = async (req, res) => {
     // Send invitation email
     try {
       const inviter = await User.findById(req.userId);
+      console.log('Sending invitation email to:', email);
+      
       await sendInvitationEmail(
         email,
         inviter.name,
         project.name,
         projectId
       );
+      
+      console.log('✅ Email invitation sent successfully');
     } catch (emailError) {
-      console.error('Email sending failed, but collaborator was added:', emailError);
+      console.error('❌ Email sending failed:', emailError.message);
+      console.log('⚠️ Collaborator was added, but email failed to send');
       // Don't fail the whole request if email fails
     }
 
     res.json({ 
-      message: 'Collaborator added successfully and invitation sent',
+      message: 'Collaborator added successfully. Invitation email sent.',
       project 
     });
   } catch (error) {

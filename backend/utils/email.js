@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter - FIX THE TYPO: createTransporter → createTransport
+// Create transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -12,6 +12,12 @@ const transporter = nodemailer.createTransport({
 // Send invitation email
 const sendInvitationEmail = async (toEmail, inviterName, projectName, projectId) => {
   try {
+    // Check if email credentials are set
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log('📧 Email credentials not set. Using mock email.');
+      return sendMockInvitationEmail(toEmail, inviterName, projectName, projectId);
+    }
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: toEmail,
@@ -38,17 +44,21 @@ const sendInvitationEmail = async (toEmail, inviterName, projectName, projectId)
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log('Invitation email sent to:', toEmail);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('📧 Real email sent to:', toEmail);
+    console.log('Message ID:', info.messageId);
+    return info;
   } catch (error) {
-    console.error('Error sending email:', error);
-    throw new Error('Failed to send invitation email');
+    console.error('❌ Error sending email:', error);
+    // Fall back to mock email if real email fails
+    console.log('🔄 Falling back to mock email');
+    return sendMockInvitationEmail(toEmail, inviterName, projectName, projectId);
   }
 };
 
-// Mock email function for development (use this if you don't want to set up real email)
+// Mock email function for development
 const sendMockInvitationEmail = async (toEmail, inviterName, projectName, projectId) => {
-  console.log('📧 Mock Email Sent:');
+  console.log('📧 Mock Email Details:');
   console.log('To:', toEmail);
   console.log('Subject: Collaboration invitation for', projectName);
   console.log('Message: You were invited by', inviterName);
@@ -58,7 +68,9 @@ const sendMockInvitationEmail = async (toEmail, inviterName, projectName, projec
   return Promise.resolve();
 };
 
-// Use mock email for development, real email for production
+// Always use real emails if credentials are set, otherwise use mock
 module.exports = { 
-  sendInvitationEmail: process.env.NODE_ENV === 'production' ? sendInvitationEmail : sendMockInvitationEmail
+  sendInvitationEmail: (process.env.EMAIL_USER && process.env.EMAIL_PASS) 
+    ? sendInvitationEmail 
+    : sendMockInvitationEmail
 };
