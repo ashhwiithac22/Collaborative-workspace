@@ -267,3 +267,131 @@
     height: calc(150px - 40px);
   }
 }
+
+/* Role badge styling */
+.user-role-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.user-role-badge.owner {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+}
+
+.user-role-badge.editor {
+  background: linear-gradient(135deg, #4ec9b0, #569cd6);
+  color: white;
+}
+
+.user-role-badge.viewer {
+  background: #6c757d;
+  color: white;
+}
+
+/* View only overlay */
+.view-only-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.view-only-message {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+}
+
+.view-only-message h3 {
+  color: #2d2b55;
+  margin-bottom: 1rem;
+}
+
+.view-only-message p {
+  color: #666;
+  line-height: 1.5;
+}
+
+.editor-wrapper {
+  position: relative; /* Needed for absolute positioning of overlay */
+}
+
+/* Role badge styling */
+.user-role-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+}
+
+.user-role-badge.owner {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+}
+
+.user-role-badge.editor {
+  background: linear-gradient(135deg, #4ec9b0, #569cd6);
+  color: white;
+}
+
+.user-role-badge.viewer {
+  background: #6c757d;
+  color: white;
+}
+
+/* View only overlay */
+.view-only-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.view-only-message {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+}
+
+.view-only-message h3 {
+  color: #2d2b55;
+  margin-bottom: 1rem;
+}
+
+.view-only-message p {
+  color: #666;
+  line-height: 1.5;
+}
+
+.editor-wrapper {
+  position: relative;
+}
+
+/* Ensure editor is properly sized */
+.monaco-editor {
+  width: 100% !important;
+  height: 100% !important;
+}

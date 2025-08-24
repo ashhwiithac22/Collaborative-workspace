@@ -59,6 +59,7 @@ exports.getUserProjects = async (req, res) => {
 };
 
 // Get single project
+// Get single project - FIX POPULATION
 exports.getProject = async (req, res) => {
   try {
     const project = await Project.findOne({
@@ -68,8 +69,8 @@ exports.getProject = async (req, res) => {
         { 'collaborators.user': req.userId }
       ]
     })
-    .populate('owner', 'name email')
-    .populate('collaborators.user', 'name email');
+    .populate('owner', 'name email _id')  // ADD _id to population
+    .populate('collaborators.user', 'name email _id');  // ADD _id to population
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
